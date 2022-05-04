@@ -1,6 +1,7 @@
 package br.uniamerica.consultorio.entity;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.Column;
@@ -10,6 +11,7 @@ import javax.validation.constraints.Digits;
 import java.math.BigDecimal;
 
 @Entity
+@NoArgsConstructor
 @Table(name = "convenios", schema = "public")
 public class Convenio extends AbstractEntity {
     @Getter @Setter

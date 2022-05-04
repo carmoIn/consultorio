@@ -2,6 +2,7 @@ package br.uniamerica.consultorio.service;
 
 import br.uniamerica.consultorio.entity.Convenio;
 import br.uniamerica.consultorio.repository.ConvenioRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import java.util.Optional;
 
 @Service
 public class ConvenioService {
+    @Autowired
     private ConvenioRepository convenioRepository;
 
     public Optional<Convenio> findById(Long id) {
@@ -37,9 +39,9 @@ public class ConvenioService {
     }
 
     @Transactional
-    public void updateStatus(Long id, Convenio convenio) {
+    public void updateDataExcluido(Long id, Convenio convenio) {
         if (id == convenio.getId()) {
-            this.convenioRepository.updateStatus(
+            this.convenioRepository.updateDataExcluido(
                     LocalDateTime.now(),
                     convenio.getId()
             );

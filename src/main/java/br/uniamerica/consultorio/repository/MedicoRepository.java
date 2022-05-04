@@ -12,10 +12,15 @@ import java.time.LocalDateTime;
 
 @Repository
 public interface MedicoRepository extends JpaRepository<Medico, Long> {
+    /**
+     *
+     * @param dataEx
+     * @param idMedico
+     */
     @Modifying
     @Query("UPDATE Medico medico " +
             "SET medico.excluido = :data " +
-            "WHERE medico.id = :medic")
-    public void setUpdateExcluido(@Param("data") LocalDateTime dataEx,
-                                  @Param("medico") Long idMedico);
+            "WHERE medico.id = :medico")
+    public void updateDataExcluido(@Param("data") LocalDateTime dataEx,
+                                   @Param("medico") Long idMedico);
 }

@@ -1,6 +1,5 @@
 package br.uniamerica.consultorio.service;
 
-import br.uniamerica.consultorio.entity.Especialidade;
 import br.uniamerica.consultorio.entity.Medico;
 import br.uniamerica.consultorio.repository.MedicoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +14,7 @@ import java.util.Optional;
 @Repository
 public class MedicoService {
     @Autowired
-    MedicoRepository medicoRepository;
+    private MedicoRepository medicoRepository;
 
     public Optional<Medico> findById(Long id) {
         return this.medicoRepository.findById(id);
@@ -41,9 +40,9 @@ public class MedicoService {
     }
 
     @Transactional
-    public void setUpdateExcluido(Long id, Medico medico) {
+    public void updateDataExcluido(Long id, Medico medico) {
         if (id == medico.getId()) {
-            this.medicoRepository.setUpdateExcluido(
+            this.medicoRepository.updateDataExcluido(
                     LocalDateTime.now(),
                     medico.getId());
         } else {

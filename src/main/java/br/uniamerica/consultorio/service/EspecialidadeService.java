@@ -71,9 +71,9 @@ public class EspecialidadeService {
      * @param especialidade
      */
     @Transactional
-    public void updateStatus(Long id, Especialidade especialidade){
+    public void updateDataExcluido(Long id, Especialidade especialidade){
         if (id == especialidade.getId()) {
-            this.especialidadeRepository.updateStatus(
+            this.especialidadeRepository.updateDataExcluido(
                     LocalDateTime.now(),
                     especialidade.getId());
         }
