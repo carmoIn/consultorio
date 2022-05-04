@@ -1,0 +1,48 @@
+package br.uniamerica.consultorio.service;
+
+import br.uniamerica.consultorio.entity.Medico;
+import br.uniamerica.consultorio.entity.Secretaria;
+import br.uniamerica.consultorio.repository.SecretariaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import javax.transaction.Transactional;
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+@Service
+public class SecretariaService {
+    private SecretariaRepository secretariaRepository;
+
+    public Optional<Secretaria> findById(Long id) {
+        return this.secretariaRepository.findById(id);
+    }
+
+    public Page<Secretaria> listAll(Pageable pageable) {
+        return this.secretariaRepository.findAll(pageable);
+    }
+
+    @Transactional
+    public void update(Long id, Secretaria secretaria) {
+        if (id == secretaria.getId()) {
+            this.secretariaRepository.save(secretaria);
+        }
+    }
+
+    @Transactional
+    public void insert(Secretaria secretaria) {
+        this.secretariaRepository.save(secretaria);
+    }
+
+    @Transactional
+    public void setUpdateExcluido(Long id, Medico medico) {
+        if (id == medico.getId()) {
+            this.secretariaRepository.setUpdateExcluido(
+                    LocalDateTime.now(),
+                    medico.getId());
+        } else {
+            throw new RuntimeException();
+        }
+    }
+}
