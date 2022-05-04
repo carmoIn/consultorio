@@ -23,8 +23,12 @@ public class Agenda extends AbstractEntity {
     private StatusAgendamento statusAgendamento;
 
     @Getter @Setter
-    @Column(nullable = false)
-    private LocalDateTime dataAgendamento;
+    @Column(nullable = false, name = "data_de")
+    private LocalDateTime dataDe;
+
+    @Getter @Setter
+    @Column(nullable = false, name = "data_ate")
+    private LocalDateTime dataAte;
 
     @Getter @Setter
     @Column(nullable = true, columnDefinition = "boolean DEFAULT false")
