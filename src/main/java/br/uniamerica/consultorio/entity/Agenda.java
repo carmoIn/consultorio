@@ -14,6 +14,7 @@ public class Agenda extends AbstractEntity {
     private Paciente paciente;
 
     @Getter @Setter
+    @JoinColumn(nullable = false)
     @OneToOne(fetch = FetchType.EAGER)
     private Medico medico;
 
@@ -31,6 +32,6 @@ public class Agenda extends AbstractEntity {
     private LocalDateTime dataAte;
 
     @Getter @Setter
-    @Column(nullable = true, columnDefinition = "boolean DEFAULT false")
+    @Column(columnDefinition = "boolean DEFAULT false")
     private Boolean encaixe;
 }
