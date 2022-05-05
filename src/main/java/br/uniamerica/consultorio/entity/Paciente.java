@@ -1,12 +1,14 @@
 package br.uniamerica.consultorio.entity;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
+@NoArgsConstructor
 @Table(name = "pacientes", schema = "public")
 public class Paciente extends Pessoa {
     @Getter @Setter
