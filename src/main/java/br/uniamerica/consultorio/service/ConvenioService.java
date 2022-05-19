@@ -20,7 +20,7 @@ public class ConvenioService {
         return this.convenioRepository.findById(id);
     }
 
-    public Page<Convenio> findAll(Pageable pageable) {
+    public Page<Convenio> listAll(Pageable pageable) {
         return this.convenioRepository.findAll(pageable);
     }
 
