@@ -9,7 +9,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Optional;
 
 @Repository
@@ -26,12 +29,15 @@ public class AgendaService {
     }
 
     public void update(Long id, Agenda agenda) {
-        if (this.hasValidStatus(agenda)) {
+        try {
             if (id == agenda.getId()) {
+                this.validateDate(agenda);
                 this.saveTransactional(agenda);
             } else {
                 throw new RuntimeException();
             }
+        } catch (RuntimeException e) {
+            throw e;
         }
     }
 
@@ -54,6 +60,37 @@ public class AgendaService {
                     agenda.getId()
             );
         }
+    }
+
+    public void validateDate(Agenda agenda) throws RuntimeException {
+        if (agenda.getDataDe().compareTo(LocalDateTime.now()) < 0) {
+            throw new RuntimeException("Data de inicio do agendamento menor do que data atual");
+        }
+        else if (agenda.getDataAte().compareTo(LocalDateTime.now()) < 0) {
+            throw new RuntimeException("Data de término do agendamento menor do que data atual");
+        }
+        else if (agenda.getDataDe().compareTo(agenda.getDataAte()) < 0) {
+            throw new RuntimeException("Data de término não pode ser inferior a data de término");
+        }
+        if (isValidDayOfWeek(agenda.getDataDe())) {
+            throw new RuntimeException("Não é possível realizar agendamentos aos sábados e domingos");
+        }
+        if (isValidBusinessHour(agenda.getDataDe()) || isValidBusinessHour(agenda.getDataAte())) {
+            throw new RuntimeException("Data do agendamento fora do horário de funcionamento");
+        }
+    }
+
+    public boolean isValidDayOfWeek(LocalDateTime date) {
+        return date.getDayOfWeek() == DayOfWeek.SUNDAY ||
+                date.getDayOfWeek() == DayOfWeek.SATURDAY;
+    }
+
+    public boolean isValidBusinessHour(LocalDateTime date) {
+        LocalTime time = date.toLocalTime();
+        LocalTime startTime = LocalTime.of(8,0);
+        LocalTime endTime = LocalTime.of(18,0);
+
+        return time.isAfter(startTime) && time.isBefore(endTime);
     }
 
     public boolean hasValidStatus(Agenda agenda) {
