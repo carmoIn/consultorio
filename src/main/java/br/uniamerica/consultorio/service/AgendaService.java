@@ -1,12 +1,14 @@
 package br.uniamerica.consultorio.service;
 
 import br.uniamerica.consultorio.entity.Agenda;
+import br.uniamerica.consultorio.entity.Paciente;
 import br.uniamerica.consultorio.entity.StatusAgendamento;
 import br.uniamerica.consultorio.repository.AgendaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.Assert;
 
 import javax.transaction.Transactional;
 import java.time.DayOfWeek;
@@ -40,8 +42,22 @@ public class AgendaService {
         }
     }
 
-    public void insert(Agenda agenda) {
-        if (this.hasValidStatus(agenda)) {
+    public void update(Paciente paciente, Long id, Agenda novaAgenda) {
+        Assert.notNull(paciente, "Paciente não informado");
+
+        Agenda agenda = this.findById(id).orElse(null);
+
+        Assert.notNull(agenda, "Id da agenda não encontrado");
+        Assert.isTrue(paciente.getId().equals(agenda.getPaciente().getId()),
+                "O agendamento informado não pertence ao paciente.");
+
+        Assert.state(novaAgenda.getStatusAgendamento().equals(StatusAgendamento.Cancelado),
+                "Operação não permitida, o paciente só pode cancelar um agendamento");
+
+        agenda.setStatusAgendamento(novaAgenda.getStatusAgendamento());
+
+        this.saveTransactional(agenda);
+    }
             this.saveTransactional(agenda);
         }
     }
