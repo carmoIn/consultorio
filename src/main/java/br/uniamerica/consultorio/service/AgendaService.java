@@ -13,7 +13,6 @@ import org.springframework.util.Assert;
 
 import javax.transaction.Transactional;
 import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -46,10 +45,16 @@ public class AgendaService {
         if (novaAgenda.getDataDe() != null && novaAgenda.getDataAte() != null) {
             this.validateDate(novaAgenda);
 
+            if (!agenda.getEncaixe()) {
+                Assert.isTrue(this.hasScheduleCollision(agenda, agenda.getDataDe(), agenda.getDataAte()),
+                        "Já existe um agendamento realizado para este horário");
+            }
+
             agenda.setDataDe(novaAgenda.getDataDe());
             agenda.setDataAte(novaAgenda.getDataAte());
         }
 
+        // TODO: alterar por método que atualize somente os campos permitidos
         this.saveTransactional(agenda);
     }
 
@@ -78,6 +83,7 @@ public class AgendaService {
             agenda.setDataAte(novaAgenda.getDataAte());
         }
 
+        // TODO: alterar por método que atualize somente os campos permitidos
         this.saveTransactional(agenda);
     }
 
@@ -108,7 +114,8 @@ public class AgendaService {
                     "O status de agendamento deve ser aprovado");
 
             if (!agenda.getEncaixe()) {
-                // valida colisão de data
+                Assert.isTrue(this.hasScheduleCollision(agenda, agenda.getDataDe(), agenda.getDataAte()),
+                        "Já existe um agendamento realizado para este horário");
             }
 
             this.saveTransactional(agenda);
@@ -150,6 +157,16 @@ public class AgendaService {
 
         Assert.isTrue(this.isValidBusinessHour(agenda.getDataAte()),
                 "A data de incio do agendamento deve estar dentro do horário de atendimento (08 às 12 e 14 as 18");
+    }
+
+    public boolean hasScheduleCollision(Agenda agenda, LocalDateTime dataDe, LocalDateTime dataAte) {
+        return this.agendaRepository.findScheduleCollision(
+                agenda.getId(),
+                agenda.getMedico().getId(),
+                agenda.getPaciente().getId(),
+                dataDe,
+                dataAte
+        ).isEmpty();
     }
 
     public boolean isValidScheduleDate(LocalDateTime date) {
