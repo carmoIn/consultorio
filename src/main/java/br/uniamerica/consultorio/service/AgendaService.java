@@ -23,6 +23,9 @@ public class AgendaService {
     @Autowired
     private AgendaRepository agendaRepository;
 
+    @Autowired
+    private AgendaHistoricoService agendaHistoricoService;
+
     public Optional<Agenda> findById(Long id) {
         return this.agendaRepository.findById(id);
     }
@@ -39,6 +42,7 @@ public class AgendaService {
         Assert.notNull(agenda, "Id da agenda não encontrado");
 
         if (novaAgenda.getStatusAgendamento() != null) {
+            //TODO: necessário validar os status de agendamento que a secretaria pode operar
             agenda.setStatusAgendamento(novaAgenda.getStatusAgendamento());
         }
 
@@ -55,7 +59,7 @@ public class AgendaService {
         }
 
         // TODO: alterar por método que atualize somente os campos permitidos
-        this.saveTransactional(agenda);
+        this.saveTransactional(secretaria, agenda);
     }
 
     public void update(Paciente paciente, Long id, Agenda novaAgenda) {
@@ -84,7 +88,7 @@ public class AgendaService {
         }
 
         // TODO: alterar por método que atualize somente os campos permitidos
-        this.saveTransactional(agenda);
+        this.saveTransactional(paciente, agenda);
     }
 
     public void insert(Paciente paciente, Agenda agenda) {
@@ -98,7 +102,7 @@ public class AgendaService {
             Assert.state(agenda.getStatusAgendamento().equals(StatusAgendamento.Pendente),
                     "O status de agendamento deve ser pendente");
 
-            this.saveTransactional(agenda);
+            this.saveTransactional(paciente, agenda);
         } catch (RuntimeException e) {
             throw new RuntimeException(e);
         }
@@ -118,14 +122,24 @@ public class AgendaService {
                         "Já existe um agendamento realizado para este horário");
             }
 
-            this.saveTransactional(agenda);
+            this.saveTransactional(secretaria, agenda);
         } catch (RuntimeException e) {
             throw new RuntimeException(e);
         }
     }
 
+    protected void saveTransactional(Secretaria secretaria, Agenda agenda) {
+        this.agendaHistoricoService.insert(secretaria, agenda);
+        this.saveTransactional(agenda);
+    }
+
+    protected void saveTransactional(Paciente paciente, Agenda agenda) {
+        this.agendaHistoricoService.insert(paciente, agenda);
+        this.saveTransactional(agenda);
+    }
+
     @Transactional
-    public void saveTransactional(Agenda agenda) {
+    protected void saveTransactional(Agenda agenda) {
         this.agendaRepository.save(agenda);
     }
 

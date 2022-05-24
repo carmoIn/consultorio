@@ -27,7 +27,11 @@ public class AgendaHistorico extends AbstractEntity {
 
     @Getter @Setter
     @Column(nullable = false)
-    private LocalDateTime data;
+    private LocalDateTime dataDe;
+
+    @Getter @Setter
+    @Column(nullable = false)
+    private LocalDateTime dataAte;
 
     @Getter @Setter
     @Enumerated(EnumType.STRING)
