@@ -2,6 +2,7 @@ package br.uniamerica.consultorio.service;
 
 import br.uniamerica.consultorio.entity.Agenda;
 import br.uniamerica.consultorio.entity.Paciente;
+import br.uniamerica.consultorio.entity.Secretaria;
 import br.uniamerica.consultorio.entity.StatusAgendamento;
 import br.uniamerica.consultorio.repository.AgendaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +13,10 @@ import org.springframework.util.Assert;
 
 import javax.transaction.Transactional;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 @Repository
@@ -29,36 +32,88 @@ public class AgendaService {
         return this.agendaRepository.findAll(pageable);
     }
 
-    public void update(Long id, Agenda agenda) {
-        try {
-            if (id == agenda.getId()) {
-                this.validateDate(agenda);
-                this.saveTransactional(agenda);
-            } else {
-                throw new RuntimeException();
-            }
-        } catch (RuntimeException e) {
-            throw e;
+    public void update(Secretaria secretaria, Long id, Agenda novaAgenda) {
+        Assert.notNull(secretaria, "Secretaria não informada");
+
+        Agenda agenda = this.findById(id).orElse(null);
+
+        Assert.notNull(agenda, "Id da agenda não encontrado");
+
+        if (novaAgenda.getStatusAgendamento() != null) {
+            agenda.setStatusAgendamento(novaAgenda.getStatusAgendamento());
         }
+
+        if (novaAgenda.getDataDe() != null && novaAgenda.getDataAte() != null) {
+            this.validateDate(novaAgenda);
+
+            agenda.setDataDe(novaAgenda.getDataDe());
+            agenda.setDataAte(novaAgenda.getDataAte());
+        }
+
+        this.saveTransactional(agenda);
     }
 
     public void update(Paciente paciente, Long id, Agenda novaAgenda) {
         Assert.notNull(paciente, "Paciente não informado");
+        Assert.notNull(novaAgenda, "Agenda não informada");
 
         Agenda agenda = this.findById(id).orElse(null);
 
         Assert.notNull(agenda, "Id da agenda não encontrado");
         Assert.isTrue(paciente.getId().equals(agenda.getPaciente().getId()),
                 "O agendamento informado não pertence ao paciente.");
+        Assert.isTrue(!agenda.getEncaixe(), "O paciente não pode alterar o horário de um encaixe");
 
-        Assert.state(novaAgenda.getStatusAgendamento().equals(StatusAgendamento.Cancelado),
-                "Operação não permitida, o paciente só pode cancelar um agendamento");
+        if (novaAgenda.getStatusAgendamento() != null) {
+            Assert.state(novaAgenda.getStatusAgendamento().equals(StatusAgendamento.Cancelado),
+                    "Operação não permitida, o paciente só pode cancelar um agendamento");
 
-        agenda.setStatusAgendamento(novaAgenda.getStatusAgendamento());
+            agenda.setStatusAgendamento(novaAgenda.getStatusAgendamento());
+        }
+
+        if (novaAgenda.getDataDe() != null && novaAgenda.getDataAte() != null) {
+            this.validateDate(novaAgenda);
+
+            agenda.setDataDe(novaAgenda.getDataDe());
+            agenda.setDataAte(novaAgenda.getDataAte());
+        }
 
         this.saveTransactional(agenda);
     }
+
+    public void insert(Paciente paciente, Agenda agenda) {
+        try {
+            Assert.notNull(paciente, "Necessário informar um paciente");
+
+            Assert.isTrue(!agenda.getEncaixe(), "Paciente não pode realizar agendamento como encaixe");
+
+            this.validateDate(agenda);
+
+            Assert.state(agenda.getStatusAgendamento().equals(StatusAgendamento.Pendente),
+                    "O status de agendamento deve ser pendente");
+
             this.saveTransactional(agenda);
+        } catch (RuntimeException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void insert(Secretaria secretaria, Agenda agenda) {
+        try {
+            Assert.notNull(secretaria, "Necessário informar uma secretaria");
+
+            this.validateDate(agenda);
+
+            Assert.state(agenda.getStatusAgendamento().equals(StatusAgendamento.Aprovado),
+                    "O status de agendamento deve ser aprovado");
+
+            if (!agenda.getEncaixe()) {
+                // valida colisão de data
+            }
+
+            this.saveTransactional(agenda);
+        } catch (RuntimeException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -78,29 +133,31 @@ public class AgendaService {
     }
 
     public void validateDate(Agenda agenda) throws RuntimeException {
-        if (agenda.getDataDe().compareTo(LocalDateTime.now()) < 0) {
-            throw new RuntimeException("Data de inicio do agendamento menor do que data atual");
-        }
-        else if (agenda.getDataAte().compareTo(LocalDateTime.now()) < 0) {
-            throw new RuntimeException("Data de término do agendamento menor do que data atual");
-        }
-        else if (agenda.getDataDe().compareTo(agenda.getDataAte()) < 0) {
-            throw new RuntimeException("Data de término não pode ser inferior a data de término");
-        }
-        if (isValidDayOfWeek(agenda.getDataDe())) {
-            throw new RuntimeException("Não é possível realizar agendamentos aos sábados e domingos");
-        }
-        if (isValidBusinessHour(agenda.getDataDe()) || isValidBusinessHour(agenda.getDataAte())) {
-            throw new RuntimeException("Data do agendamento fora do horário de funcionamento");
-        }
+        Assert.isTrue(this.isValidScheduleDate(agenda.getDataDe()),
+                "A data atual precisa ser maior do que a atual");
+
+        Assert.isTrue(this.isValidScheduleDate(agenda.getDataAte()),
+                "A data de término precisa ser maior do que a atual");
+
+        Assert.isTrue(this.isValidDateRange(agenda.getDataDe(), agenda.getDataAte()),
+                "A data de término precisa ser maior do que a data inicial");
+
+        Assert.isTrue(this.isValidDayOfWeek(agenda.getDataDe()),
+                "Não é possível realizar agendamentos aos sábados e domingos");
+
+        Assert.isTrue(this.isValidBusinessHour(agenda.getDataDe()),
+                "A data de incio do agendamento deve estar dentro do horário de atendimento (08 às 12 e 14 as 18");
+
+        Assert.isTrue(this.isValidBusinessHour(agenda.getDataAte()),
+                "A data de incio do agendamento deve estar dentro do horário de atendimento (08 às 12 e 14 as 18");
     }
 
-    public boolean canChangeStatus(StatusAgendamento currentStatus, StatusAgendamento newStatus) {
-        if (currentStatus.equals(StatusAgendamento.Pendente)) {
-            return newStatus.equals(StatusAgendamento.Aprovado) ||
-                    newStatus.equals(StatusAgendamento.Recusado) ||
-                    newStatus.equals(StatusAgendamento.Cancelado);
-        }
+    public boolean isValidScheduleDate(LocalDateTime date) {
+        return this.isValidDateRange(LocalDateTime.now(), date);
+    }
+
+    public boolean isValidDateRange(LocalDateTime dateStart, LocalDateTime dateEnd) {
+        return dateEnd.compareTo(dateStart) >= 0;
     }
 
     public boolean isValidDayOfWeek(LocalDateTime date) {
@@ -111,24 +168,10 @@ public class AgendaService {
     public boolean isValidBusinessHour(LocalDateTime date) {
         LocalTime time = date.toLocalTime();
         LocalTime startTime = LocalTime.of(8,0);
+        LocalTime lunchTime = LocalTime.of(12,0);
         LocalTime endTime = LocalTime.of(18,0);
 
-        return time.isAfter(startTime) && time.isBefore(endTime);
-    }
-
-    public boolean hasValidStatus(Agenda agenda) {
-        if (agenda.getStatusAgendamento().equals(StatusAgendamento.Compareceu) &&
-                agenda.getDataDe().compareTo(LocalDateTime.now()) > 0) {
-            return false;
-        }
-        else if (agenda.getStatusAgendamento().equals(StatusAgendamento.NaoCompareceu) &&
-                agenda.getDataDe().compareTo(LocalDateTime.now()) > 0) {
-            return false;
-        }
-        else if (agenda.getStatusAgendamento().equals(StatusAgendamento.Pendente) &&
-                (agenda.getEncaixe() || agenda.getDataDe().compareTo(LocalDateTime.now()) < 0)) {
-            return false;
-        }
-        return true;
+        return (time.isAfter(startTime) && time.isBefore(lunchTime)) ||
+                (lunchTime.isAfter(lunchTime.plus(2, ChronoUnit.HOURS)) && time.isBefore(endTime));
     }
 }
