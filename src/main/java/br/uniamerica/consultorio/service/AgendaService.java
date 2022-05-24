@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
 import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Optional;
@@ -77,6 +76,14 @@ public class AgendaService {
         }
         if (isValidBusinessHour(agenda.getDataDe()) || isValidBusinessHour(agenda.getDataAte())) {
             throw new RuntimeException("Data do agendamento fora do horário de funcionamento");
+        }
+    }
+
+    public boolean canChangeStatus(StatusAgendamento currentStatus, StatusAgendamento newStatus) {
+        if (currentStatus.equals(StatusAgendamento.Pendente)) {
+            return newStatus.equals(StatusAgendamento.Aprovado) ||
+                    newStatus.equals(StatusAgendamento.Recusado) ||
+                    newStatus.equals(StatusAgendamento.Cancelado);
         }
     }
 
