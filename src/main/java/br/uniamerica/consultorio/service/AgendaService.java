@@ -43,6 +43,8 @@ public class AgendaService {
 
         if (novaAgenda.getStatusAgendamento() != null) {
             //TODO: necessário validar os status de agendamento que a secretaria pode operar
+            this.validateStatusChange(agenda.getStatusAgendamento(), novaAgenda.getStatusAgendamento());
+
             agenda.setStatusAgendamento(novaAgenda.getStatusAgendamento());
         }
 
@@ -171,6 +173,40 @@ public class AgendaService {
 
         Assert.isTrue(this.isValidBusinessHour(agenda.getDataAte()),
                 "A data de incio do agendamento deve estar dentro do horário de atendimento (08 às 12 e 14 as 18");
+    }
+
+    public void validateStatusChange(StatusAgendamento statusAtual, StatusAgendamento novoStatus) {
+        // Testes do status atual do agendamento
+        Assert.state(!statusAtual.equals(StatusAgendamento.Cancelado),
+                "Status de cancelado não pode ser modificado");
+        Assert.state(!statusAtual.equals(StatusAgendamento.Compareceu),
+                "Status de compareceu não pode ser modificado");
+
+        Assert.state(!statusAtual.equals(StatusAgendamento.NaoCompareceu),
+                "Status de não compareceu não pode ser modificado");
+
+        // Testes do novo status do agendamento
+        Assert.state(!novoStatus.equals(StatusAgendamento.Pendente),
+                "Status não pode ser definido como pendente");
+
+        switch (novoStatus) {
+            case Aprovado:
+            case Recusado:
+                Assert.state(statusAtual.equals(StatusAgendamento.Pendente),
+                        "Somente agendamentos pendentes podem ser difinidos com status desejado");
+                break;
+            case Cancelado:
+                Assert.state(statusAtual.equals(StatusAgendamento.Aprovado) || statusAtual.equals(StatusAgendamento.Pendente),
+                        "Somente agendamentos pendentes ou aprovados podem ser cancelados");
+                break;
+                // TODO: Necessário conferir se a data permite alterar para os status compareceu e não compareu
+            case Compareceu:
+                Assert.state(statusAtual.equals(StatusAgendamento.Aprovado),
+                        "Somente agendamentos aprovados ou aprovados podem ser marcados como compareceu");
+            case NaoCompareceu:
+                Assert.state(statusAtual.equals(StatusAgendamento.Aprovado),
+                        "Somente agendamentos aprovados ou aprovados podem ser marcados como não compareceu");
+        }
     }
 
     public boolean hasScheduleCollision(Agenda agenda, LocalDateTime dataDe, LocalDateTime dataAte) {
